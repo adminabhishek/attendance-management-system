@@ -7,25 +7,20 @@ import zipfile
 import tkinter as tk
 from tkinter import ttk, simpledialog, messagebox
 
+
 # Directory containing known face images
 # known_faces_dir = r'C:\\Users\\rm710\\OneDrive\\Desktop\\Attendance Using Face Recognition\\known_faces'
 
-# Load known faces
-# def load_known_faces():
-#     global known_faces, known_names
-#     known_faces = []
-#     known_names = []
-#     for filename in os.listdir(known_faces_dir):
-#         if filename.endswith('.jpg') or filename.endswith('.png'):
-#             image = face_recognition.load_image_file(f"{known_faces_dir}\\{filename}")
-#             encodings = face_recognition.face_encodings(image)
-#             if encodings:
-#                 known_faces.append(encodings[0])
-#                 known_names.append(filename.split('.')[0])
+import os
 
-# load_known_faces()
-# Directory containing known face images
 known_faces_dir = r'C:\\Users\\rm710\\OneDrive\\Desktop\\Attendance Using Face Recognition\\known_faces'
+
+# Ensure the directory exists
+if not os.path.exists(known_faces_dir):
+    os.makedirs(known_faces_dir)
+    print(f"Created directory: {known_faces_dir}")
+else:
+    print(f"Directory already exists: {known_faces_dir}")
 
 # Load known faces
 def load_known_faces():
@@ -49,19 +44,61 @@ load_known_faces()
 
 
 # Function to capture image
+# def capture_image():
+#     cam = cv2.VideoCapture(0)
+#     while True:
+#         ret, frame = cam.read()
+#         if not ret:
+#             print("Failed to grab frame")
+#             break
+#         cv2.imshow('Press Space to capture', frame)
+#         if cv2.waitKey(1) & 0xFF == ord(' '):
+#             break
+#     cam.release()
+#     cv2.destroyAllWindows()
+#     return frame if ret else None
+
+# Function to capture image automatically when a face is detected
 def capture_image():
     cam = cv2.VideoCapture(0)
+    face_detected = False
+    captured_frame = None
+
     while True:
         ret, frame = cam.read()
         if not ret:
             print("Failed to grab frame")
             break
-        cv2.imshow('Press Space to capture', frame)
-        if cv2.waitKey(1) & 0xFF == ord(' '):
+
+        # Convert frame to RGB for face_recognition compatibility
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # Check for face(s) in the frame
+        face_locations = face_recognition.face_locations(rgb_frame)
+
+        # If a face is detected, save the frame and break
+        if face_locations:
+            face_detected = True
+            captured_frame = frame
+            cv2.putText(frame, "Face Detected. Capturing...", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+            cv2.imshow('Face Detection', frame)
+            cv2.waitKey(1000)  # Pause for a moment to show detection message
             break
+
+        # Display the video feed with no detection message
+        cv2.imshow('Face Detection', frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
     cam.release()
     cv2.destroyAllWindows()
-    return frame if ret else None
+
+    if face_detected:
+        return captured_frame
+    else:
+        print("No face detected.")
+        return None
+
 
 # Function to recognize face
 def recognize_face(captured_image):
